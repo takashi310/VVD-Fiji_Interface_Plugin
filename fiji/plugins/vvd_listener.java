@@ -316,7 +316,7 @@ public class vvd_listener implements PlugIn {
 							IJ.runMacro("run(\"16-bit\");");
 						imp = WindowManager.getCurrentImage();
 						int isize = getImageSizeByte(imp);
-						clientSocket.setSendBufferSize(isize+8000);
+						clientSocket.setSendBufferSize(isize+10*1024*1024);
 						sendImage(imp, outToServer, inFromServer);
 					}
 					else IJ.log("There is no active image.");
