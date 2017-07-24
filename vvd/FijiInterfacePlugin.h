@@ -84,10 +84,14 @@ public:
 	bool SendCommand(wxString command);
 	bool SendCommand(wxString command, const void * data);
 
+	void OnTimer(wxTimerEvent& event);
+
 private:
 	wxString m_fiji_path;
 	bool m_initialized;
 	bool m_booting;
+	wxTimer m_timer;
+	wxStopWatch m_watch;
 	wxString m_pid;
 	FijiServer *m_server;
 	wxString m_fiji_plugin_ver;

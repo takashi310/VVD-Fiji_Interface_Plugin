@@ -1,12 +1,12 @@
 set (SRCS
-	FijiInterfacePlugin.cpp
-	FijiInterfacePluginExports.cpp
-	FijiInterfacePluginWindow.cpp)
+	SampleGuiPlugin1.cpp
+	SampleGuiPlugin1Exports.cpp
+	SampleGuiPluginWindow1.cpp)
 set (HEADERS
-	FijiInterfacePlugin.h
-	FijiInterfacePluginWindow.h)
+	SampleGuiPlugin1.h
+	SampleGuiPluginWindow1.h)
 	
-set(LIBRARY_NAME FijiInterfacePlugin)
+set(LIBRARY_NAME SampleGuiPlugin1)
 
 if(WIN32)
 	set(SRCS ${SRCS} ${LIBRARY_NAME}.rc ${LIBRARY_NAME}.def)

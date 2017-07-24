@@ -264,7 +264,7 @@ void SampleGuiPlugin1::StartFiji()
 		return;
 
 	m_initialized = false;
-	wxString command = m_fiji_path + " -port774 -macro vvd_listener.ijm";
+	wxString command = m_fiji_path + " -port3 -macro vvd_listener.ijm";
 	m_booting = true;
 	wxExecute(command);
 }
@@ -274,8 +274,10 @@ void SampleGuiPlugin1::CloseFiji()
 	if (m_fiji_path.IsEmpty())
 		return;
 
-	wxString command = m_fiji_path + " -port774 -macro vvd_quit.ijm";
+	wxString command = m_fiji_path + " -port3 -macro vvd_quit.ijm";
 	wxExecute(command);
+	m_initialized = false;
+	m_booting = false;
 }
 
 bool SampleGuiPlugin1::isReady()
@@ -294,11 +296,22 @@ void SampleGuiPlugin1::OnInit()
 	m_server->addObserver(this);
 
 	StartFiji();
+	if (m_booting)
+	{
+		m_timer.Start(100);
+		m_watch.Start();
+	}
 }
 
 void SampleGuiPlugin1::OnDestroy()
 {
 	CloseFiji();
+}
+
+void SampleGuiPlugin1::OnTimer(wxTimerEvent& event)
+{
+	if (m_watch.Time() >= 10000)
+		CloseFiji();
 }
 
 void SampleGuiPlugin1::LoadConfigFile()
