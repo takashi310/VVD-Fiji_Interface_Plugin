@@ -159,6 +159,8 @@ void SampleGuiPlugin1::doAction(ActionInfo *info)
 		break;
 	case FI_CONFIRM:
 		m_initialized = true;
+		m_timer.Stop();
+		m_watch.Pause();
 		break;
 	case FI_VOLUMEDATA:
 		if (m_vvd)
@@ -311,7 +313,11 @@ void SampleGuiPlugin1::OnDestroy()
 void SampleGuiPlugin1::OnTimer(wxTimerEvent& event)
 {
 	if (m_watch.Time() >= 10000)
+	{
 		CloseFiji();
+		m_timer.Stop();
+		m_watch.Pause();
+	}
 }
 
 void SampleGuiPlugin1::LoadConfigFile()
