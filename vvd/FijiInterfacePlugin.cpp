@@ -283,7 +283,7 @@ void SampleGuiPlugin1::CloseFiji()
 #ifdef _WIN32
 	//wxString command = m_fiji_path + " -port3 -macro vvd_quit.ijm";
     //wxExecute(command);
-    if (!m_pid.IsEmpty()) wxShell("taskkill /pid "+m_pid+" /f")
+    if (!m_pid.IsEmpty()) wxShell("taskkill /pid "+m_pid+" /f");
 #else
     if (!m_pid.IsEmpty()) wxShell("kill "+m_pid);
 #endif
