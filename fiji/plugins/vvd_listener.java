@@ -228,6 +228,8 @@ public class vvd_listener implements PlugIn {
 		
 		try {
 			Socket clientSocket = new Socket("localhost", 8002);
+			clientSocket.setReceiveBufferSize(100*1024*1024);
+			clientSocket.setSendBufferSize(100*1024*1024);
 			byte type;
 			
 			DataInputStream inFromServer = new DataInputStream(clientSocket.getInputStream());

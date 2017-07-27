@@ -140,7 +140,7 @@ void SampleGuiPluginWindow1::CreateControls()
 	m_FijiPickCtrl = new wxFilePickerCtrl( itemGuiPluginWindowBase1, ID_SAMPLE_FIJI, fpath, _("path"), wxFileSelectorDefaultWildcardStr, wxDefaultPosition, wxSize(500, -1));
     itemBoxSizer2->Add(m_FijiPickCtrl, 0, wxGROW|wxLEFT|wxRIGHT|wxTOP, 5);
 
-	m_CommandTextCtrl = new wxTextCtrl( itemGuiPluginWindowBase1, ID_SAMPLE_COMMAND, _("Janelia H265 Reader"), wxDefaultPosition, wxSize(500, -1), 0 );
+	m_CommandTextCtrl = new wxTextCtrl( itemGuiPluginWindowBase1, ID_SAMPLE_COMMAND, _("Open..."), wxDefaultPosition, wxSize(500, -1), 0 );
     itemBoxSizer2->Add(m_CommandTextCtrl, 0, wxGROW|wxLEFT|wxRIGHT|wxTOP, 5);
 
     wxButton* m_CommandButton = new wxButton( itemGuiPluginWindowBase1, ID_SEND_EVENT_BUTTON, _("Send event"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -220,6 +220,20 @@ void SampleGuiPluginWindow1::doAction(ActionInfo *info)
 			wxDELETE(m_prg_diag);
 			EnableControls(true);
 			m_waitingforfiji = false;
+#ifdef _WIN32
+            wchar_t slash = L'\\';
+            wxString expath = wxStandardPaths::Get().GetExecutablePath();
+            expath = expath.BeforeLast(slash, NULL);
+            wxString act = expath + "\\ActivatePID.vbs";
+            if (wxFileExists(act))
+            {
+                act = _("cscript //nologo ")+act+" "+wxString::Format("%lu",wxGetProcessId());
+                wxExecute(act, wxEXEC_HIDE_CONSOLE|wxEXEC_ASYNC);
+            }
+#else
+            wxString act = "osascript -e 'tell application \"System Events\" to set frontmost of the first process whose unix id is "+wxString::Format("%lu",wxGetProcessId())+" to true'";
+            wxExecute(act, wxEXEC_HIDE_CONSOLE|wxEXEC_ASYNC);
+#endif
 		}
 		break;
 	case FI_VERSION_CHECK:
@@ -265,8 +279,8 @@ void SampleGuiPluginWindow1::OnSENDEVENTBUTTONClick( wxCommandEvent& event )
 				wxExecute(act, wxEXEC_HIDE_CONSOLE|wxEXEC_ASYNC);
 			}
 #else
-			wxString act = "osascript -e \" tell application \\\"System Events\\\"\n set frontmost of the first process whose unix id is "+m_pid+" to true\n end tell\""
-				wxExecute(act, wxEXEC_HIDE_CONSOLE|wxEXEC_ASYNC);
+			wxString act = "osascript -e 'tell application \"System Events\" to set frontmost of the first process whose unix id is "+plugin->GetPID()+" to true'";
+            wxExecute(act, wxEXEC_HIDE_CONSOLE|wxEXEC_ASYNC);
 #endif
 			plugin->SendCommand(m_CommandTextCtrl->GetValue());
 			m_waitingforfiji = true;

@@ -266,7 +266,11 @@ void SampleGuiPlugin1::StartFiji()
 		return;
 
 	m_initialized = false;
+#ifdef _WIN32
 	wxString command = m_fiji_path + " -port3 -macro vvd_listener.ijm";
+#else
+    wxString command = m_fiji_path + "/Contents/MacOS/ImageJ-macosx -port3 -macro vvd_listener.ijm";
+#endif
 	m_booting = true;
 	wxExecute(command);
 }
@@ -276,8 +280,13 @@ void SampleGuiPlugin1::CloseFiji()
 	if (m_fiji_path.IsEmpty())
 		return;
 
-	wxString command = m_fiji_path + " -port3 -macro vvd_quit.ijm";
-	wxExecute(command);
+#ifdef _WIN32
+	//wxString command = m_fiji_path + " -port3 -macro vvd_quit.ijm";
+    //wxExecute(command);
+    if (!m_pid.IsEmpty()) wxShell("taskkill /pid "+m_pid+" /f")
+#else
+    if (!m_pid.IsEmpty()) wxShell("kill "+m_pid);
+#endif
 	m_initialized = false;
 	m_booting = false;
 }
