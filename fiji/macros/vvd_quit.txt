@@ -1,4 +1,4 @@
-macro "vvd" {
+macro "vvd_quit" {
         run("Quit");
         eval("script", "System.exit(0);");
 }

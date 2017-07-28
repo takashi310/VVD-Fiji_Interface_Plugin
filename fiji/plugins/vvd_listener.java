@@ -307,7 +307,7 @@ public class vvd_listener implements PlugIn {
 				} else if (str.equals("com")) {
 					String command = new String(data2, Charset.forName("UTF-8"));
 					IJ.log("Command; "+command);
-					IJ.runMacroFile("vvd_run.ijm", command);
+					IJ.runMacroFile("vvd_run.txt", command);
 					IJ.log("command finished");
 					ImagePlus imp = WindowManager.getCurrentImage();
 					if (imp != null) {

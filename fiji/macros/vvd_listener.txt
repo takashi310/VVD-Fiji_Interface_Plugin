@@ -1,4 +1,4 @@
-macro "vvd" {
+macro "vvd_listener" {
 	// pass command-line arguments to plugin
 	eval("js", "IJ.getInstance().setLocation(50000, 50000)");
 	eval("script", "IJ.getInstance().setAlwaysOnTop(true)");
