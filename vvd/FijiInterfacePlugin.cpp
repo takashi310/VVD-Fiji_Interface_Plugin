@@ -9,11 +9,17 @@ IMPLEMENT_DYNAMIC_CLASS(SampleGuiPlugin1, wxObject)
 
 FijiServer::~FijiServer(void)
 {
-	if (m_connection)
-	{
-		m_connection->Disconnect();
-		delete m_connection;
-	}
+    DeleteConnection();
+}
+
+void FijiServer::DeleteConnection()
+{
+    if (m_connection)
+    {
+        if (m_connection->GetConnected()) m_connection->Disconnect();
+        delete m_connection;
+        m_connection = NULL;
+    }
 }
 
 wxConnectionBase* FijiServer::OnAcceptConnection(const wxString &topic)
@@ -283,9 +289,9 @@ void SampleGuiPlugin1::CloseFiji()
 #ifdef _WIN32
 	//wxString command = m_fiji_path + " -port3 -macro vvd_quit.ijm";
     //wxExecute(command);
-    if (!m_pid.IsEmpty()) wxShell("taskkill /pid "+m_pid+" /f");
+    if (!m_pid.IsEmpty()) wxExecute("taskkill /pid "+m_pid+" /f");
 #else
-    if (!m_pid.IsEmpty()) wxShell("kill "+m_pid);
+    if (!m_pid.IsEmpty()) wxExecute("kill "+m_pid);
 #endif
 	m_initialized = false;
 	m_booting = false;
@@ -316,6 +322,8 @@ void SampleGuiPlugin1::OnInit()
 
 void SampleGuiPlugin1::OnDestroy()
 {
+    if (m_server)
+        m_server->DeleteConnection();
 	CloseFiji();
 }
 

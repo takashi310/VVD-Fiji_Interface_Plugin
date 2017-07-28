@@ -46,6 +46,8 @@ public:
     wxConnectionBase* OnAcceptConnection(const wxString &topic);
     
 	void SetFrame(wxWindow *vframe){ m_vframe = vframe; }
+    
+    void DeleteConnection();
 
 protected:
 	FijiServerConnection *m_connection;
