@@ -305,7 +305,7 @@ void SampleGuiPluginWindow1::OnPendingCommandTimer(wxTimerEvent& event)
 {
 	SampleGuiPlugin1* plugin = (SampleGuiPlugin1 *)GetPlugin();
 
-	if (!plugin || plugin->isReady() || m_pcwatch.Time() >= 10000)
+	if (!plugin || plugin->isReady() || m_pcwatch.Time() >= 15000)
 	{
 		m_pctimer->Stop();
 		m_pcwatch.Pause();
