@@ -97,4 +97,5 @@ private:
 	wxString m_pid;
 	FijiServer *m_server;
 	wxString m_fiji_plugin_ver;
+	wxProcess *m_fijiprocess;
 };

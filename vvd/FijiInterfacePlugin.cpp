@@ -123,7 +123,7 @@ bool FijiServerConnection::OnExec(const wxString &topic, const wxString &data)
 
 
 SampleGuiPlugin1::SampleGuiPlugin1()
-	: wxGuiPluginBase(NULL, NULL), m_server(NULL), m_initialized(false), m_booting(false)
+	: wxGuiPluginBase(NULL, NULL), m_server(NULL), m_initialized(false), m_booting(false), m_fijiprocess(NULL)
 {
 
 }
@@ -296,21 +296,22 @@ void SampleGuiPlugin1::StartFiji()
     wxString command = m_fiji_path + "/Contents/MacOS/ImageJ-macosx -macro vvd_listener.txt";
 #endif
 	m_booting = true;
-	wxProcess *wxp = new wxProcess();
-	wxExecute(command, wxEXEC_HIDE_CONSOLE|wxEXEC_ASYNC, wxp);
-	if (wxp) m_pid = wxString::Format("%ld", wxp->GetPid());
-	wxDELETE(wxp);
+	m_fijiprocess = new wxProcess();
+	wxExecute(command, wxEXEC_HIDE_CONSOLE|wxEXEC_ASYNC, m_fijiprocess);
+	if (m_fijiprocess) m_pid = wxString::Format("%ld", m_fijiprocess->GetPid());
 }
 
 void SampleGuiPlugin1::CloseFiji()
 {
 	if (m_fiji_path.IsEmpty())
 		return;
+	
+	if (m_fijiprocess) m_fijiprocess->Detach();
 
 #ifdef _WIN32
 	//wxString command = m_fiji_path + " -port3 -macro vvd_quit.ijm";
     //wxExecute(command);
-    if (!m_pid.IsEmpty()) wxExecute("taskkill /pid "+m_pid+" /f", wxEXEC_HIDE_CONSOLE|wxEXEC_ASYNC);
+    if (!m_pid.IsEmpty()) wxExecute("taskkill /pid "+m_pid+" /f", wxEXEC_HIDE_CONSOLE|wxEXEC_SYNC);
 #else
     if (!m_pid.IsEmpty())
     {
