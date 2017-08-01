@@ -152,7 +152,10 @@ public class vvd_listener implements PlugIn {
 			if (nCh > 1) b2 = (imp.getTitle()+"_Ch"+ch+"\0").getBytes(Charset.forName("UTF-8"));
 			else b2 = (imp.getTitle()+"\0").getBytes(Charset.forName("UTF-8"));
 			ImageProcessor tp = stack.getProcessor(imp.getStackIndex(ch+1, 1, 1));
-			Color col = new Color(luts[ch].getRGB(255));
+			Color col;
+			if (ch < luts.length) col = new Color(luts[ch].getRGB(255));
+			else if (luts.length >= 1) col = new Color(luts[0].getRGB(255));
+			else col = new Color(255, 255, 255);
 			IJ.log(""+col.getRed()+" "+col.getGreen()+" "+col.getBlue()+" "+bdepth);
 
 			int margin = 0;
