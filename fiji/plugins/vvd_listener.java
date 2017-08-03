@@ -285,6 +285,8 @@ public class vvd_listener implements PlugIn {
 		if (rcvimp == null)
 			return null;
 
+		rcvimp.show();
+
 		FileInfo finfo_r = rcvimp.getFileInfo();
 		finfo_r.pixelWidth = xspc;
 		finfo_r.pixelHeight = yspc;
@@ -293,24 +295,14 @@ public class vvd_listener implements PlugIn {
 
 		IJ.log("R: "+r+"  G: "+g+"  B: "+b);
 
-		try {
-			Color col = new Color(r,g,b);
-			rcvimp.setLut(LUT.createLutFromColor(col));
-		} catch (IllegalArgumentException e) {
-			Color col = new Color(255,255,255);
-			rcvimp.setLut(LUT.createLutFromColor(col));
-			IJ.log("IllegalArgumentException (Color)");
-		}
-
 		ImageStack stack = rcvimp.getStack();
 		if (bdepth == 8) {
 			for (int s = 1; s <= depth; s++){
 				ImageProcessor ips = stack.getProcessor(s);
 				byte[] slicebuf = new byte[width*height];
 				inbuf.get(slicebuf);
-//				ips.setPixels(slicebuf);
-				for (int i = 0; i < width*height; ++i)
-					ips.putPixel(i%width, i/width, slicebuf[i] & 0xFF);
+				ips.setPixels(slicebuf);
+				stack.setProcessor(ips, s);
 			}
 		} else if (bdepth == 16) {
 			ShortBuffer sinbuf = inbuf.asShortBuffer();
@@ -318,9 +310,8 @@ public class vvd_listener implements PlugIn {
 				ImageProcessor ips = stack.getProcessor(s);
 				short[] slicebuf = new short[width*height];
 				sinbuf.get(slicebuf);
-				//ips.setPixels(slicebuf);
-				for (int i = 0; i < width*height; ++i)
-					ips.putPixel(i%width, i/width, slicebuf[i] & 0xFFFF);
+				ips.setPixels(slicebuf);
+				stack.setProcessor(ips, s);
 			}
 		} else if (bdepth == 32) {
 			FloatBuffer finbuf = inbuf.asFloatBuffer();
@@ -329,7 +320,19 @@ public class vvd_listener implements PlugIn {
 				float[] slicebuf = new float[width*height];
 				finbuf.get(slicebuf);
 				ips.setPixels(slicebuf);
+				stack.setProcessor(ips, s);
 			}
+		}
+
+		try {
+			Color col = new Color(r,g,b);
+			rcvimp.setLut(LUT.createLutFromColor(col));
+			rcvimp.setColor(col);
+		} catch (IllegalArgumentException e) {
+			Color col = new Color(255,255,255);
+			rcvimp.setLut(LUT.createLutFromColor(col));
+			rcvimp.setColor(col);
+			IJ.log("IllegalArgumentException (Color)");
 		}
 
 		IJ.log("LOADED: "+name);
@@ -481,7 +484,7 @@ public class vvd_listener implements PlugIn {
 						sendImage(imp, outToServer, inFromServer);
 					}
 					else IJ.log("There is no active image.");
-					//IJ.runMacro("run(\"Close All\");");
+					IJ.runMacro("run(\"Close All\");");
 					IJ.freeMemory();
 					sendTextMessage("com_finish", command+"\0", outToServer);
 					IJ.log("done");
