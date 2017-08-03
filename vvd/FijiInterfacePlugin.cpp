@@ -3,6 +3,7 @@
 #include "FijiInterfacePluginWindow.h"
 #include "VRenderFrame.h"
 #include "wx/process.h"
+#include "wx/mstream.h"
 #include "compatibility.h"
 
 IMPLEMENT_DYNAMIC_CLASS(SampleGuiPlugin1, wxObject)
@@ -48,6 +49,12 @@ long FijiServerConnection::GetTimeout()
 		return m_sock->GetTimeout();
 	else
 		return -1L;
+}
+
+void FijiServerConnection::SetSndBufSize(size_t size)
+{
+    if (m_sock)
+        m_sock->SetOption(SOL_SOCKET, SO_SNDBUF, &size, sizeof(size));
 }
 
 bool FijiServerConnection::OnAdvise(const wxString& topic, const wxString& item, char *data,
@@ -105,6 +112,18 @@ bool FijiServerConnection::OnPoke(const wxString& topic, const wxString& item, c
 			if (sec > 0)
 				SetTimeout(sec);
 		}
+        if (item == "setrcvbufsize")
+        {
+            int newbuffersize = *((const int32_t *)data);
+            if (newbuffersize > 0)
+                m_sock->SetOption(SOL_SOCKET, SO_RCVBUF, &newbuffersize, sizeof(newbuffersize));
+        }
+        if (item == "setsndbufsize")
+        {
+            int newbuffersize = *((const int32_t *)data);
+            if (newbuffersize > 0)
+                m_sock->SetOption(SOL_SOCKET, SO_SNDBUF, &newbuffersize, sizeof(newbuffersize));
+        }
 		if (item == "volume")
 		{
 			notifyAll(FI_VOLUMEDATA, data, size);
@@ -259,12 +278,78 @@ bool SampleGuiPlugin1::SendCommand(wxString command)
 {
 	if (!m_server || !m_server->GetConnection())
 		return false;
+    SendCurrentVolume();
 	return m_server->GetConnection()->Poke(_("com"), command);
 }
 
 bool SampleGuiPlugin1::SendCommand(wxString command, const void * data)
 {
 	return true;
+}
+
+bool SampleGuiPlugin1::SendCurrentVolume()
+{
+    VRenderFrame *vframe = (VRenderFrame *)m_vvd;
+    if (!vframe || !m_server || !m_server->GetConnection() || !m_server->GetConnection()) return false;
+    
+    VolumeData *vd = vframe->GetCurSelVol();
+    if (!vd) return false;
+    
+    Nrrd *vol = vd->GetVolume(true);
+    //Nrrd *msk = vd->GetMask(true);
+    
+    if (!vol->data) return false;
+    
+    const wxString name = vd->GetName();
+    size_t basesize = 4+name.Len()+4+4+4+4+4+4+4+8+8+8;
+    int resx, resy, resz;
+    vd->GetResolution(resx, resy, resz);
+    double spcx, spcy, spcz;
+    vd->GetSpacings(spcx, spcy, spcz);
+    int bd;
+    if (vol->type == nrrdTypeChar || vol->type == nrrdTypeUChar)
+        bd = 8;
+    else
+        bd = 16;
+    size_t imagesize = (size_t)resx*(size_t)resy*(size_t)resz*(size_t)(bd/8);
+    char *buf = new char[basesize+imagesize];
+    FLIVR::Color col = vd->GetColor();
+    
+    int32_t tmp32;
+    wxMemoryOutputStream mos(buf, basesize+imagesize);
+    tmp32 = (int32_t)name.Len();
+    mos.Write(&tmp32, sizeof(int32_t));
+    mos.Write(name.ToStdString().c_str(), tmp32);
+    tmp32 = (int32_t)resx;
+    mos.Write(&tmp32, sizeof(int32_t));
+    tmp32 = (int32_t)resy;
+    mos.Write(&tmp32, sizeof(int32_t));
+    tmp32 = (int32_t)resz;
+    mos.Write(&tmp32, sizeof(int32_t));
+    tmp32 = (int32_t)bd;
+    mos.Write(&tmp32, sizeof(int32_t));
+    tmp32 = (int32_t)(col.r()*255);
+    mos.Write(&tmp32, sizeof(int32_t));
+    tmp32 = (int32_t)(col.g()*255);
+    mos.Write(&tmp32, sizeof(int32_t));
+    tmp32 = (int32_t)(col.b()*255);
+    mos.Write(&tmp32, sizeof(int32_t));
+    mos.Write(&spcx, sizeof(double));
+    mos.Write(&spcy, sizeof(double));
+    mos.Write(&spcz, sizeof(double));
+    mos.Write(vol->data, imagesize);
+    
+    tmp32 = basesize+imagesize;
+    if (tmp32 > 0)
+    {
+        m_server->GetConnection()->SetSndBufSize(basesize+imagesize);
+        m_server->GetConnection()->Poke("setrcvbufsize", &tmp32, sizeof(int32_t), wxIPC_PRIVATE);
+        m_server->GetConnection()->Poke("volume", buf, tmp32, wxIPC_PRIVATE);
+    }
+    
+    delete[] buf;
+    
+    return true;
 }
 
 wxString SampleGuiPlugin1::GetName() const

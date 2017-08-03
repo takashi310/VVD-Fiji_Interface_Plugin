@@ -20,6 +20,8 @@ public:
 
 	void SetTimeout(long seconds);
 	long GetTimeout();
+    
+    void SetSndBufSize(size_t size);
 
     bool OnAdvise(const wxString& topic, const wxString& item, char *data,
                   int size, wxIPCFormat format);
@@ -85,6 +87,7 @@ public:
 
 	bool SendCommand(wxString command);
 	bool SendCommand(wxString command, const void * data);
+    bool SendCurrentVolume();
 
 	void OnTimer(wxTimerEvent& event);
 

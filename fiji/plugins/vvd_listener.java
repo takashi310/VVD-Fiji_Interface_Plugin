@@ -73,6 +73,30 @@ public class vvd_listener implements PlugIn {
 		out.flush();
 	}
 
+	public void setServerRcvBufSize(int size, DataOutputStream out) throws IOException {
+		ByteOrder norder;
+		if (ByteOrder.nativeOrder().equals(ByteOrder.BIG_ENDIAN)) {
+			norder = ByteOrder.BIG_ENDIAN;
+		} else {
+			norder = ByteOrder.LITTLE_ENDIAN;
+		}
+		
+		byte[] b, b2, tb;
+		b = "setrcvbufsize".getBytes(Charset.forName("UTF-8"));
+		ByteBuffer outsentence = ByteBuffer.allocate(1+4+b.length+1+4+4);
+		outsentence.order(norder);
+		outsentence.put(IPC_POKE);
+		outsentence.putInt(b.length);
+		outsentence.put(b);
+		outsentence.put(wxIPC_PRIVATE);
+		outsentence.putInt(4);
+		outsentence.putInt(size);
+		outsentence.flip();
+		tb = outsentence.array();
+		out.write(tb, 0, tb.length);
+		out.flush();
+	}
+
 	public void sendTextMessage(String item_name, String message, DataOutputStream out) throws IOException {
 		ByteOrder norder;
 		if (ByteOrder.nativeOrder().equals(ByteOrder.BIG_ENDIAN)) {
@@ -218,6 +242,101 @@ public class vvd_listener implements PlugIn {
 		//setServerTimeout(1, out);
 	}
 
+	public ImagePlus LoadReceivedImage(byte[] data)
+	{
+		ByteBuffer inbuf = ByteBuffer.wrap(data);
+
+		ByteOrder norder;
+		if (ByteOrder.nativeOrder().equals(ByteOrder.BIG_ENDIAN)) {
+			norder = ByteOrder.BIG_ENDIAN;
+		} else {
+			norder = ByteOrder.LITTLE_ENDIAN;
+		}
+		
+		inbuf.order(norder);
+
+		int namelen = inbuf.getInt();
+		byte[] namebuf = new byte[namelen];
+		inbuf.get(namebuf);
+		String name = new String(namebuf, Charset.forName("UTF-8"));
+		int width = inbuf.getInt();
+		int height = inbuf.getInt();
+		int depth = inbuf.getInt();
+		int bdepth = inbuf.getInt();
+		int r = inbuf.getInt();
+		int g = inbuf.getInt();
+		int b = inbuf.getInt();
+		double xspc = inbuf.getDouble();
+		double yspc = inbuf.getDouble();
+		double zspc = inbuf.getDouble();
+
+		int imagesize = width*height*depth*(bdepth/8);
+
+		IJ.log("RECEIVED: "+name);
+		
+		ImagePlus rcvimp = null;
+		if (bdepth == 8)
+			rcvimp = NewImage.createByteImage(name, width, height, depth, NewImage.FILL_BLACK);
+		else if (bdepth == 16)
+			rcvimp = NewImage.createShortImage(name, width, height, depth, NewImage.FILL_BLACK);
+		else if (bdepth == 32)
+			rcvimp = NewImage.createFloatImage(name, width, height, depth, NewImage.FILL_BLACK);
+
+		if (rcvimp == null)
+			return null;
+
+		FileInfo finfo_r = rcvimp.getFileInfo();
+		finfo_r.pixelWidth = xspc;
+		finfo_r.pixelHeight = yspc;
+		finfo_r.pixelDepth = zspc;
+		rcvimp.setFileInfo(finfo_r);
+
+		IJ.log("R: "+r+"  G: "+g+"  B: "+b);
+
+		try {
+			Color col = new Color(r,g,b);
+			rcvimp.setLut(LUT.createLutFromColor(col));
+		} catch (IllegalArgumentException e) {
+			Color col = new Color(255,255,255);
+			rcvimp.setLut(LUT.createLutFromColor(col));
+			IJ.log("IllegalArgumentException (Color)");
+		}
+
+		ImageStack stack = rcvimp.getStack();
+		if (bdepth == 8) {
+			for (int s = 1; s <= depth; s++){
+				ImageProcessor ips = stack.getProcessor(s);
+				byte[] slicebuf = new byte[width*height];
+				inbuf.get(slicebuf);
+//				ips.setPixels(slicebuf);
+				for (int i = 0; i < width*height; ++i)
+					ips.putPixel(i%width, i/width, slicebuf[i] & 0xFF);
+			}
+		} else if (bdepth == 16) {
+			ShortBuffer sinbuf = inbuf.asShortBuffer();
+			for (int s = 1; s <= depth; s++){
+				ImageProcessor ips = stack.getProcessor(s);
+				short[] slicebuf = new short[width*height];
+				sinbuf.get(slicebuf);
+				//ips.setPixels(slicebuf);
+				for (int i = 0; i < width*height; ++i)
+					ips.putPixel(i%width, i/width, slicebuf[i] & 0xFFFF);
+			}
+		} else if (bdepth == 32) {
+			FloatBuffer finbuf = inbuf.asFloatBuffer();
+			for (int s = 1; s <= depth; s++){
+				ImageProcessor ips = stack.getProcessor(s);
+				float[] slicebuf = new float[width*height];
+				finbuf.get(slicebuf);
+				ips.setPixels(slicebuf);
+			}
+		}
+
+		IJ.log("LOADED: "+name);
+
+		return rcvimp;
+	}
+
 	@Override
 	public void run(String arg) {
 		IJ.getInstance().setAlwaysOnTop(true); 
@@ -281,28 +400,48 @@ public class vvd_listener implements PlugIn {
 				}
 		
 				if (type != IPC_POKE) {
-					IJ.log(""+(int)type);
+					IJ.log("INVALID SIGNAL: "+(int)type);
 					break;
 				}
 				
 				inFromServer.read(intbuf);
-				size = (intbuf[0] & 0xFF) | (intbuf[1] & 0xFF) << 8 | (intbuf[2] & 0xFF) << 16 | (intbuf[3] & 0xFF) << 24;
+				if (norder == ByteOrder.LITTLE_ENDIAN)
+					size = (intbuf[0] & 0xFF) | (intbuf[1] & 0xFF) << 8 | (intbuf[2] & 0xFF) << 16 | (intbuf[3] & 0xFF) << 24;
+				else
+					size = (intbuf[0] & 0xFF << 24) | (intbuf[1] & 0xFF) << 16 | (intbuf[2] & 0xFF) << 8 | (intbuf[3] & 0xFF);
 				IJ.log("size: "+size);
 				
 				byte[] data = new byte[size];
-				inFromServer.read(data);
-				String str = new String(data, Charset.forName("UTF-8"));
+				String str = "";
+				int count;
+				int sum = 0;
+				while (sum < size && (count = inFromServer.read(data)) > 0) {
+					String s = new String(data, 0, count, Charset.forName("UTF-8"));
+					str += s; sum += count;
+				}
 				IJ.log(str);
 				
 				format = inFromServer.readByte();
 				IJ.log("format: "+format);
 				
 				inFromServer.read(intbuf);
-				size2 = (intbuf[0] & 0xFF) | (intbuf[1] & 0xFF) << 8 | (intbuf[2] & 0xFF) << 16 | (intbuf[3] & 0xFF) << 24;
-				IJ.log("size2: "+size);
+				if (norder == ByteOrder.LITTLE_ENDIAN)
+					size2 = (intbuf[0] & 0xFF) | (intbuf[1] & 0xFF) << 8 | (intbuf[2] & 0xFF) << 16 | (intbuf[3] & 0xFF) << 24;
+				else
+					size2 = (intbuf[0] & 0xFF << 24) | (intbuf[1] & 0xFF) << 16 | (intbuf[2] & 0xFF) << 8 | (intbuf[3] & 0xFF);
+				IJ.log("size2: "+size2);
 				
 				byte[] data2 = new byte[size2];
-				inFromServer.read(data2);
+				int tmpbufsize = size2 > 100*1024*1024 ? 100*1024*1024 : size2;
+				byte[] rcvbuf = new byte[tmpbufsize];
+				ByteBuffer inbuf = ByteBuffer.wrap(data2);
+				sum = 0;
+				int loopcnt = 0;
+				while (sum < size2 && (count = inFromServer.read(rcvbuf)) > 0) {
+					inbuf.put(rcvbuf, 0, count);
+					sum += count; loopcnt++;
+				}
+				IJ.log("read_num: "+sum+"  loop_count: "+loopcnt);
 
 				if (str.equals("confirm")) {
 					String pass_server = new String(data2, Charset.forName("UTF-8"));
@@ -313,6 +452,17 @@ public class vvd_listener implements PlugIn {
 					} else {
 						IJ.log("OK");
 					}
+				} else if (str.equals("setrcvbufsize") && size2 == 4) {
+					int bufsize = 0;
+					if (norder == ByteOrder.LITTLE_ENDIAN)
+						bufsize = (data2[0] & 0xFF) | (data2[1] & 0xFF) << 8 | (data2[2] & 0xFF) << 16 | (data2[3] & 0xFF) << 24;
+					else
+						bufsize = (data2[0] & 0xFF << 24) | (data2[1] & 0xFF) << 16 | (data2[2] & 0xFF) << 8 | (data2[3] & 0xFF);
+					clientSocket.setReceiveBufferSize(bufsize);
+					IJ.log("RcvBufSize; "+bufsize);
+				} else if (str.equals("volume")) {
+					ImagePlus rcvimp = LoadReceivedImage(data2);
+					rcvimp.show();
 				} else if (str.equals("com")) {
 					String command = new String(data2, Charset.forName("UTF-8"));
 					IJ.log("Command; "+command);
@@ -331,7 +481,8 @@ public class vvd_listener implements PlugIn {
 						sendImage(imp, outToServer, inFromServer);
 					}
 					else IJ.log("There is no active image.");
-					IJ.run("Close All");
+					//IJ.runMacro("run(\"Close All\");");
+					IJ.freeMemory();
 					sendTextMessage("com_finish", command+"\0", outToServer);
 					IJ.log("done");
 				} else {
