@@ -469,21 +469,25 @@ public class vvd_listener implements PlugIn {
 				} else if (str.equals("com")) {
 					String command = new String(data2, Charset.forName("UTF-8"));
 					IJ.log("Command; "+command);
-					IJ.runMacroFile("vvd_run.txt", command);
-					IJ.log("command finished");
-					ImagePlus imp = WindowManager.getCurrentImage();
-					if (imp != null) {
-						int bd = imp.getBitDepth();
-						if (bd == 24)
-							IJ.runMacro("run(\"RGB Stack\");");
-						if (bd == 32)
-							IJ.runMacro("run(\"16-bit\");");
-						imp = WindowManager.getCurrentImage();
-						int isize = getImageSizeByte(imp);
-						clientSocket.setSendBufferSize(isize+10*1024*1024);
-						sendImage(imp, outToServer, inFromServer);
+					String ret = IJ.runMacroFile("vvd_run.txt", command);
+					if (ret == null || !ret.equals("[aborted]")) {
+						IJ.log("command finished");
+						ImagePlus imp = WindowManager.getCurrentImage();
+						if (imp != null) {
+							int bd = imp.getBitDepth();
+							if (bd == 24)
+								IJ.runMacro("run(\"RGB Stack\");");
+							if (bd == 32)
+								IJ.runMacro("run(\"16-bit\");");
+							imp = WindowManager.getCurrentImage();
+							int isize = getImageSizeByte(imp);
+							clientSocket.setSendBufferSize(isize+10*1024*1024);
+							sendImage(imp, outToServer, inFromServer);
+						}
+						else IJ.log("There is no active image.");
 					}
-					else IJ.log("There is no active image.");
+					else IJ.log("command aborted");
+					
 					IJ.runMacro("run(\"Close All\");");
 					IJ.freeMemory();
 					sendTextMessage("com_finish", command+"\0", outToServer);
