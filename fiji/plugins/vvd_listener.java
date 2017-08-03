@@ -294,6 +294,17 @@ public class vvd_listener implements PlugIn {
 		rcvimp.setFileInfo(finfo_r);
 
 		IJ.log("R: "+r+"  G: "+g+"  B: "+b);
+		
+		try {
+			Color col = new Color(r,g,b);
+			rcvimp.setLut(LUT.createLutFromColor(col));
+			rcvimp.setColor(col);
+		} catch (IllegalArgumentException e) {
+			Color col = new Color(255,255,255);
+			rcvimp.setLut(LUT.createLutFromColor(col));
+			rcvimp.setColor(col);
+			IJ.log("IllegalArgumentException (Color)");
+		}
 
 		ImageStack stack = rcvimp.getStack();
 		if (bdepth == 8) {
@@ -322,17 +333,6 @@ public class vvd_listener implements PlugIn {
 				ips.setPixels(slicebuf);
 				stack.setProcessor(ips, s);
 			}
-		}
-
-		try {
-			Color col = new Color(r,g,b);
-			rcvimp.setLut(LUT.createLutFromColor(col));
-			rcvimp.setColor(col);
-		} catch (IllegalArgumentException e) {
-			Color col = new Color(255,255,255);
-			rcvimp.setLut(LUT.createLutFromColor(col));
-			rcvimp.setColor(col);
-			IJ.log("IllegalArgumentException (Color)");
 		}
 
 		IJ.log("LOADED: "+name);
