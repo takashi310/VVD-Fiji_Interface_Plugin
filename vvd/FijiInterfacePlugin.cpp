@@ -243,7 +243,7 @@ void SampleGuiPlugin1::doAction(ActionInfo *info)
 			chk -= 8;
 
 			double spcz = *((const double *)ptr);
-			ptr += 4;
+			ptr += 8;
 			chk -= 8;
 
 			if (chk == nx*ny*nz*(bd/8))
