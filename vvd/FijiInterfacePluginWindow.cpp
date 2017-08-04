@@ -220,6 +220,7 @@ void SampleGuiPluginWindow1::doAction(ActionInfo *info)
 			wxDELETE(m_prg_diag);
 			EnableControls(true);
 			m_waitingforfiji = false;
+			m_wtimer->Stop();
 #ifdef _WIN32
             wchar_t slash = L'\\';
             wxString expath = wxStandardPaths::Get().GetExecutablePath();
@@ -261,7 +262,7 @@ void SampleGuiPluginWindow1::OnSENDEVENTBUTTONClick( wxCommandEvent& event )
 			m_prg_diag = new wxProgressDialog(
 				"Connecting to Fiji...",
 				"Please wait.",
-				100, 0, wxPD_APP_MODAL|wxPD_SMOOTH|wxPD_AUTO_HIDE);
+				100, 0, wxPD_APP_MODAL|wxPD_SMOOTH|wxPD_AUTO_HIDE|wxPD_CAN_ABORT);
 			m_prg_diag->Pulse();
 			if (m_Plugin->GetVVDMainFrame())
 				m_Plugin->GetVVDMainFrame()->SetEvtHandlerEnabled(false);
@@ -289,8 +290,9 @@ void SampleGuiPluginWindow1::OnSENDEVENTBUTTONClick( wxCommandEvent& event )
 			m_prg_diag = new wxProgressDialog(
 				"Waiting for Fiji...",
 				"Please wait.",
-				100, m_Plugin->GetVVDMainFrame(), wxPD_APP_MODAL|wxPD_SMOOTH|wxPD_AUTO_HIDE);
+				100, m_Plugin->GetVVDMainFrame(), wxPD_APP_MODAL|wxPD_SMOOTH|wxPD_AUTO_HIDE|wxPD_CAN_ABORT);
 			m_prg_diag->Pulse();
+			m_wtimer->Start();
 		}
 	}
 
@@ -304,6 +306,15 @@ void SampleGuiPluginWindow1::OnSENDEVENTBUTTONClick( wxCommandEvent& event )
 void SampleGuiPluginWindow1::OnPendingCommandTimer(wxTimerEvent& event)
 {
 	SampleGuiPlugin1* plugin = (SampleGuiPlugin1 *)GetPlugin();
+
+	if (m_prg_diag && m_prg_diag->WasCancelled())
+	{
+		m_pctimer->Stop();
+		m_pcwatch.Pause();
+		if (m_prg_diag) wxDELETE(m_prg_diag);
+		if (m_Plugin->GetVVDMainFrame()) m_Plugin->GetVVDMainFrame()->SetEvtHandlerEnabled(true);
+		if (plugin) plugin->CloseFiji();
+	}
 
 	if (!plugin || plugin->isReady() || m_pcwatch.Time() >= 15000)
 	{
@@ -327,7 +338,15 @@ void SampleGuiPluginWindow1::OnPendingCommandTimer(wxTimerEvent& event)
 
 void SampleGuiPluginWindow1::OnWaitTimer(wxTimerEvent& event)
 {
-	event.Skip();
+	SampleGuiPlugin1* plugin = (SampleGuiPlugin1 *)GetPlugin();
+
+	if (m_prg_diag && m_prg_diag->WasCancelled())
+	{
+		m_wtimer->Stop();
+		if (m_prg_diag) wxDELETE(m_prg_diag);
+		if (plugin) plugin->CloseFiji();
+		EnableControls(true);
+	}
 }
 
 void SampleGuiPluginWindow1::OnClose(wxCloseEvent& event)

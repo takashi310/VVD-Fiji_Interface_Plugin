@@ -11,7 +11,7 @@ IMPLEMENT_DYNAMIC_CLASS(SampleGuiPlugin1, wxObject)
 
 FijiServer::~FijiServer(void)
 {
-    DeleteConnection();
+
 }
 
 void FijiServer::DeleteConnection()
@@ -448,8 +448,6 @@ void SampleGuiPlugin1::OnInit()
 
 void SampleGuiPlugin1::OnDestroy()
 {
-    if (m_server)
-        m_server->DeleteConnection();
 	CloseFiji();
 }
 
