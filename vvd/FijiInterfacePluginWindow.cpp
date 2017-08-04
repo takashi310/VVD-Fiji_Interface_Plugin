@@ -292,7 +292,7 @@ void SampleGuiPluginWindow1::OnSENDEVENTBUTTONClick( wxCommandEvent& event )
 				"Please wait.",
 				100, m_Plugin->GetVVDMainFrame(), wxPD_APP_MODAL|wxPD_SMOOTH|wxPD_AUTO_HIDE|wxPD_CAN_ABORT);
 			m_prg_diag->Pulse();
-			m_wtimer->Start();
+			m_wtimer->Start(50);
 		}
 	}
 
