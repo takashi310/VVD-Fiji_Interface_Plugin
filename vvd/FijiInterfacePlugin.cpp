@@ -261,7 +261,20 @@ void SampleGuiPlugin1::doAction(ActionInfo *info)
 
 				Nrrd *nrrd = vd->GetVolume(false);
 				memcpy(nrrd->data, ptr, nx*ny*nz*(bd/8));
-				//notifyAll(FI_VOLUMEDATA, name, name_len);
+                
+                if (bd == 16)
+                {
+                    const char *p = ptr;
+                    int maxval = 0;
+                    for (int i = 0; i < chk; i+=2)
+                    {
+                        int ival = *((unsigned short *)p);
+                        if (maxval < ival)
+                            maxval = ival;
+                        p += 2;
+                    }
+                    vd->SetMaxValue((double)maxval);
+                }
 
 				vframe->AddVolume(vd, NULL);
 			}
