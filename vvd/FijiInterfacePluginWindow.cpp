@@ -143,7 +143,7 @@ void SampleGuiPluginWindow1::CreateControls()
 	m_CommandTextCtrl = new wxTextCtrl( itemGuiPluginWindowBase1, ID_SAMPLE_COMMAND, _("Open..."), wxDefaultPosition, wxSize(500, -1), 0 );
     itemBoxSizer2->Add(m_CommandTextCtrl, 0, wxGROW|wxLEFT|wxRIGHT|wxTOP, 5);
 
-    wxButton* m_CommandButton = new wxButton( itemGuiPluginWindowBase1, ID_SEND_EVENT_BUTTON, _("Send event"), wxDefaultPosition, wxDefaultSize, 0 );
+    m_CommandButton = new wxButton( itemGuiPluginWindowBase1, ID_SEND_EVENT_BUTTON, _("Send event"), wxDefaultPosition, wxDefaultSize, 0 );
     itemBoxSizer2->Add(m_CommandButton, 0, wxALIGN_CENTER_HORIZONTAL|wxALL, 5);
 
 	itemGuiPluginWindowBase1->SetSizer(itemBoxSizer2);
