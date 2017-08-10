@@ -248,35 +248,60 @@ void SampleGuiPlugin1::doAction(ActionInfo *info)
 
 			if (chk == nx*ny*nz*(bd/8))
 			{
-				VolumeData *vd = new VolumeData();
-				vd->AddEmptyData(bd, nx, ny, nz, spcx, spcy, spcz);
-				FLIVR::Color col((double)r/255.0, (double)g/255.0, (double)b/255.0);
-				vd->SetName(wxString(name));
-				vd->SetColor(col);
-				vd->SetBaseSpacings(spcx, spcy, spcz);
-				vd->SetSpcFromFile(true);
-
+				bool set_as_mask = false;
 				DataManager *dm = vframe->GetDataManager();
-				if (dm) dm->SetVolumeDefault(vd);
+				if (dm && !m_sent_mask.IsEmpty() && m_sent_mask == name && bd == 8)
+				{
+					VolumeData *src = dm->GetVolumeData(name);
+					if (src)
+					{
+						int resx, resy, resz;
+						src->GetResolution(resx, resy, resz);
+						if (resx == nx && resy == ny && resz == nz)
+							set_as_mask = true;
+					}
+					m_sent_mask = "";
+				}
 
-				Nrrd *nrrd = vd->GetVolume(false);
-				memcpy(nrrd->data, ptr, nx*ny*nz*(bd/8));
-                
-                if (bd == 16)
-                {
-                    const char *p = ptr;
-                    int maxval = 0;
-                    for (int i = 0; i < chk; i+=2)
-                    {
-                        int ival = *((unsigned short *)p);
-                        if (maxval < ival)
-                            maxval = ival;
-                        p += 2;
-                    }
-                    vd->SetMaxValue((double)maxval);
-                }
+				if (set_as_mask)
+				{
+					VolumeData *vd = VolumeData::DeepCopy(*dm->GetVolumeData(name), false, dm);
+					if (!vd->GetMask(false)) vd->AddEmptyMask();
+					
+					Nrrd *nrrd = vd->GetMask(false);
+					memcpy(nrrd->data, ptr, nx*ny*nz*(bd/8));
+					vframe->AddVolume(vd, NULL);
+				}
+				else
+				{
+					VolumeData *vd = new VolumeData();
+					vd->AddEmptyData(bd, nx, ny, nz, spcx, spcy, spcz);
+					FLIVR::Color col((double)r/255.0, (double)g/255.0, (double)b/255.0);
+					vd->SetName(wxString(name));
+					vd->SetColor(col);
+					vd->SetBaseSpacings(spcx, spcy, spcz);
+					vd->SetSpcFromFile(true);
 
-				vframe->AddVolume(vd, NULL);
+					if (dm) dm->SetVolumeDefault(vd);
+
+					Nrrd *nrrd = vd->GetVolume(false);
+					memcpy(nrrd->data, ptr, nx*ny*nz*(bd/8));
+
+					if (bd == 16)
+					{
+						const char *p = ptr;
+						int maxval = 0;
+						for (int i = 0; i < chk; i+=2)
+						{
+							int ival = *((unsigned short *)p);
+							if (maxval < ival)
+								maxval = ival;
+							p += 2;
+						}
+						vd->SetMaxValue((double)maxval);
+					}
+					vframe->AddVolume(vd, NULL);
+				}
 			}
 			delete [] name;
 		}
@@ -287,20 +312,15 @@ void SampleGuiPlugin1::doAction(ActionInfo *info)
 	}
 }
 
-bool SampleGuiPlugin1::SendCommand(wxString command)
+bool SampleGuiPlugin1::SendCommand(wxString command, bool send_mask)
 {
 	if (!m_server || !m_server->GetConnection())
 		return false;
-    SendCurrentVolume();
+    SendCurrentVolume(send_mask);
 	return m_server->GetConnection()->Poke(_("com"), command);
 }
 
-bool SampleGuiPlugin1::SendCommand(wxString command, const void * data)
-{
-	return true;
-}
-
-bool SampleGuiPlugin1::SendCurrentVolume()
+bool SampleGuiPlugin1::SendCurrentVolume(bool send_mask)
 {
     VRenderFrame *vframe = (VRenderFrame *)m_vvd;
     if (!vframe || !m_server || !m_server->GetConnection() || !m_server->GetConnection()) return false;
@@ -308,10 +328,17 @@ bool SampleGuiPlugin1::SendCurrentVolume()
     VolumeData *vd = vframe->GetCurSelVol();
     if (!vd) return false;
     
-    Nrrd *vol = vd->GetVolume(true);
-    //Nrrd *msk = vd->GetMask(true);
+    Nrrd *vol = NULL;
+	if (send_mask)
+	{
+		vol = vd->GetMask(true);
+		if (!vol)
+			vol = vd->GetVolume(true);
+	}
+	else
+		vol = vd->GetVolume(true);
     
-    if (!vol->data) return false;
+    if (!vol || !vol->data) return false;
     
     const wxString name = vd->GetName();
     size_t basesize = 4+name.Len()+4+4+4+4+4+4+4+8+8+8;
@@ -358,6 +385,8 @@ bool SampleGuiPlugin1::SendCurrentVolume()
         m_server->GetConnection()->SetSndBufSize(basesize+imagesize);
         m_server->GetConnection()->Poke("setrcvbufsize", &tmp32, sizeof(int32_t), wxIPC_PRIVATE);
         m_server->GetConnection()->Poke("volume", buf, tmp32, wxIPC_PRIVATE);
+
+		if (send_mask) m_sent_mask = name;
     }
     
     delete[] buf;

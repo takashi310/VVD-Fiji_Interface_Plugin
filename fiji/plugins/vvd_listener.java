@@ -285,15 +285,15 @@ public class vvd_listener implements PlugIn {
 		if (rcvimp == null)
 			return null;
 
-		rcvimp.show();
-
 		FileInfo finfo_r = rcvimp.getFileInfo();
 		finfo_r.pixelWidth = xspc;
 		finfo_r.pixelHeight = yspc;
 		finfo_r.pixelDepth = zspc;
 		rcvimp.setFileInfo(finfo_r);
 
-		IJ.log("R: "+r+"  G: "+g+"  B: "+b);
+		rcvimp.show();
+		IJ.run("Properties...", "unit=micron pixel_width="+xspc+" pixel_height="+yspc+" voxel_depth="+zspc);
+		IJ.log("xspc: "+xspc+"  yspc: "+yspc+"  zspc: "+zspc);
 		
 		try {
 			Color col = new Color(r,g,b);

@@ -106,6 +106,7 @@ void SampleGuiPluginWindow1::Init()
 	m_FijiPickCtrl = NULL;
 	m_CommandTextCtrl = NULL;
 	m_CommandButton = NULL;
+	m_SendMaskChk = NULL;
 	m_prg_diag = NULL;
 	m_pctimer = new wxTimer(this, ID_PendingCommandTimer);
 	m_waitingforfiji = false;
@@ -143,6 +144,10 @@ void SampleGuiPluginWindow1::CreateControls()
 	m_CommandTextCtrl = new wxTextCtrl( itemGuiPluginWindowBase1, ID_SAMPLE_COMMAND, _("Open..."), wxDefaultPosition, wxSize(500, -1), 0 );
     itemBoxSizer2->Add(m_CommandTextCtrl, 0, wxGROW|wxLEFT|wxRIGHT|wxTOP, 5);
 
+	m_SendMaskChk = new wxCheckBox(itemGuiPluginWindowBase1, ID_SAMPLE_MASK, "Process mask ");
+	itemBoxSizer2->Add(10, 5);
+	itemBoxSizer2->Add(m_SendMaskChk, 0, wxLEFT, 15);
+
     m_CommandButton = new wxButton( itemGuiPluginWindowBase1, ID_SEND_EVENT_BUTTON, _("Send event"), wxDefaultPosition, wxDefaultSize, 0 );
     itemBoxSizer2->Add(m_CommandButton, 0, wxALIGN_CENTER_HORIZONTAL|wxALL, 5);
 
@@ -160,12 +165,14 @@ void SampleGuiPluginWindow1::EnableControls(bool enable)
 		if (m_FijiPickCtrl) m_FijiPickCtrl->Enable();
 		if (m_CommandTextCtrl) m_CommandTextCtrl->Enable();
 		if (m_CommandButton) m_CommandButton->Enable();
+		if (m_SendMaskChk) m_SendMaskChk->Enable();
 	}
 	else 
 	{
 		if (m_FijiPickCtrl) m_FijiPickCtrl->Disable();
 		if (m_CommandTextCtrl) m_CommandTextCtrl->Disable();
 		if (m_CommandButton) m_CommandButton->Disable();
+		if (m_SendMaskChk) m_SendMaskChk->Disable();
 	}
 }
 
@@ -283,7 +290,7 @@ void SampleGuiPluginWindow1::OnSENDEVENTBUTTONClick( wxCommandEvent& event )
 			wxString act = "osascript -e 'tell application \"System Events\" to set frontmost of the first process whose unix id is "+plugin->GetPID()+" to true'";
             wxExecute(act, wxEXEC_HIDE_CONSOLE|wxEXEC_ASYNC);
 #endif
-			plugin->SendCommand(m_CommandTextCtrl->GetValue());
+			plugin->SendCommand(m_CommandTextCtrl->GetValue(), m_SendMaskChk->GetValue());
 			m_waitingforfiji = true;
 			EnableControls(false);
 			if (m_prg_diag) wxDELETE(m_prg_diag);

@@ -85,9 +85,8 @@ public:
 
 	void doAction(ActionInfo *info);
 
-	bool SendCommand(wxString command);
-	bool SendCommand(wxString command, const void * data);
-    bool SendCurrentVolume();
+	bool SendCommand(wxString command, bool send_mask=false);
+    bool SendCurrentVolume(bool send_mask);
 
 	void OnTimer(wxTimerEvent& event);
 
@@ -98,6 +97,7 @@ private:
 	wxTimer m_timer;
 	wxStopWatch m_watch;
 	wxString m_pid;
+	wxString m_sent_mask;
 	FijiServer *m_server;
 	wxString m_fiji_plugin_ver;
 	wxProcess *m_fijiprocess;
