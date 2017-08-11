@@ -27,6 +27,7 @@ class SampleGuiPluginWindow1: public wxGuiPluginWindowBase, public Observer
 		ID_SAMPLE_FIJI,
 		ID_SAMPLE_COMMAND,
 		ID_SAMPLE_MASK,
+		ID_SAMPLE_STARTUP,
 		ID_SEND_EVENT_BUTTON,
 		ID_PendingCommandTimer,
 		ID_WaitTimer
@@ -73,6 +74,8 @@ public:
 
 	void EnableControls(bool enable=true);
 
+	void SendCommand(wxString com, bool send_mask);
+
 ////@end SampleGuiPluginWindow1 member function declarations
 
     static bool ShowToolTips();
@@ -83,12 +86,15 @@ private:
 	wxFilePickerCtrl* m_FijiPickCtrl;
 	wxTextCtrl* m_CommandTextCtrl;
 	wxButton* m_CommandButton;
+	wxCheckBox* m_LaunchChk;
 	wxCheckBox* m_SendMaskChk;
 	wxTimer* m_pctimer;
 	wxTimer* m_wtimer;
 	wxStopWatch m_pcwatch;
 	wxProgressDialog* m_prg_diag;
 	bool m_waitingforfiji;
+	wxString pendingcommand;
+	bool pendingcom_msk;
 };
 
 #endif

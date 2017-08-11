@@ -142,13 +142,13 @@ bool FijiServerConnection::OnExec(const wxString &topic, const wxString &data)
 
 
 SampleGuiPlugin1::SampleGuiPlugin1()
-	: wxGuiPluginBase(NULL, NULL), m_server(NULL), m_initialized(false), m_booting(false), m_fijiprocess(NULL)
+	: wxGuiPluginBase(NULL, NULL), m_server(NULL), m_initialized(false), m_booting(false), m_fijiprocess(NULL), m_sendmask(false), m_launch_fiji_startup(false)
 {
 
 }
 
 SampleGuiPlugin1::SampleGuiPlugin1(wxEvtHandler * handler, wxWindow * vvd)
-	: wxGuiPluginBase(handler, vvd), m_server(NULL), m_initialized(false), m_booting(false)
+	: wxGuiPluginBase(handler, vvd), m_server(NULL), m_initialized(false), m_booting(false), m_fijiprocess(NULL), m_sendmask(false), m_launch_fiji_startup(false)
 {
 }
 
@@ -180,7 +180,7 @@ void SampleGuiPlugin1::doAction(ActionInfo *info)
 		notifyAll(FI_VERSION_CHECK, info->data, info->size);
 		break;
 	case FI_PID:
-		m_pid = wxString((char *)info->data);
+		//m_pid = wxString((char *)info->data);
 		notifyAll(FI_PID, info->data, info->size);
 		break;
 	case FI_CONFIRM:
@@ -409,10 +409,16 @@ wxWindow * SampleGuiPlugin1::CreatePanel(wxWindow * parent)
 	return new SampleGuiPluginWindow1(this, parent);
 }
 
-void SampleGuiPlugin1::StartFiji()
+bool SampleGuiPlugin1::StartFiji()
 {
-	if (m_fiji_path.IsEmpty() || m_initialized || m_booting)
-		return;
+	if (m_initialized || m_booting)
+		return true;
+
+	if (m_fiji_path.IsEmpty() || !wxFileExists(m_fiji_path))
+	{
+		wxMessageBox("Error: Could not found Fiji", "Fiji Interface");
+		return false;
+	}
 
 	m_initialized = false;
 #ifdef _WIN32
@@ -426,6 +432,8 @@ void SampleGuiPlugin1::StartFiji()
 	m_fijiprocess = new wxProcess();
 	wxExecute(command, wxEXEC_HIDE_CONSOLE|wxEXEC_ASYNC, m_fijiprocess);
 	if (m_fijiprocess) m_pid = wxString::Format("%ld", m_fijiprocess->GetPid());
+
+	return true;
 }
 
 void SampleGuiPlugin1::CloseFiji()
@@ -467,17 +475,19 @@ void SampleGuiPlugin1::OnInit()
 	m_server->Create("8002");
 	m_server->addObserver(this);
 
-	StartFiji();
-	if (m_booting)
-	{
-		m_timer.Start(100);
-		m_watch.Start();
-	}
+	if (m_launch_fiji_startup)
+		StartFiji();
 }
 
 void SampleGuiPlugin1::OnDestroy()
 {
 	CloseFiji();
+}
+
+bool SampleGuiPlugin1::OnRun(wxString options)
+{
+	notifyAll(FI_RUN, options.ToStdString().c_str(), options.Len()+1);
+	return true;
 }
 
 void SampleGuiPlugin1::OnTimer(wxTimerEvent& event)
@@ -508,8 +518,13 @@ void SampleGuiPlugin1::LoadConfigFile()
 		{
 			wxFileConfig fconfig(is);
 			wxString str;
+			bool bVal;
 			if (fconfig.Read("fiji_path", &str))
 				m_fiji_path = str;
+			if (fconfig.Read("launch_fiji", &bVal))
+				m_launch_fiji_startup = bVal;
+			if (fconfig.Read("send_mask", &bVal))
+				m_sendmask = bVal;
 		}
 	}
 }
@@ -519,6 +534,8 @@ void SampleGuiPlugin1::SaveConfigFile()
 	wxFileConfig fconfig("Fiji interface default settings");
 
 	fconfig.Write("fiji_path", m_fiji_path);
+	fconfig.Write("launch_fiji", m_launch_fiji_startup);
+	fconfig.Write("send_mask", m_sendmask);
 
 	wxString expath = wxStandardPaths::Get().GetExecutablePath();
 	expath = expath.BeforeLast(GETSLASH(),NULL);

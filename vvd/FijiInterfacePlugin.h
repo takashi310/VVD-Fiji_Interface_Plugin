@@ -11,6 +11,7 @@
 #define FI_COMMAND_FINISHED 4
 #define FI_CONFIRM 5
 #define FI_PID 6
+#define FI_RUN 7
 
 class FijiServerConnection : public wxConnection, public Notifier
 {
@@ -69,17 +70,22 @@ public:
 	virtual wxWindow * CreatePanel(wxWindow * parent);
 	virtual void OnInit();
 	virtual void OnDestroy();
+	virtual bool OnRun(wxString options);
 
 	void SetFijiPath(wxString path) { m_fiji_path = path; }
 	wxString GetFijiPath() { return m_fiji_path; }
 	wxString GetFijiPluginVer() { return m_fiji_plugin_ver; }
+	void SetSendMask(bool val) { m_sendmask = val; }
+	bool GetSendMask() { return m_sendmask; }
+	void SetLaunchFijiAtStartup(bool val) { m_launch_fiji_startup = val; }
+	bool GetLaunchFijiAtStartup() { return m_launch_fiji_startup; }
 
 	wxString GetPID() { return m_pid; }
 
 	void LoadConfigFile();
 	void SaveConfigFile();
 
-	void StartFiji();
+	bool StartFiji();
 	void CloseFiji();
 	bool isReady();
 
@@ -94,6 +100,8 @@ private:
 	wxString m_fiji_path;
 	bool m_initialized;
 	bool m_booting;
+	bool m_sendmask;
+	bool m_launch_fiji_startup;
 	wxTimer m_timer;
 	wxStopWatch m_watch;
 	wxString m_pid;

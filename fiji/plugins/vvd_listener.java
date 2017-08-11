@@ -10,6 +10,7 @@ import java.nio.*;
 import java.nio.charset.*;
 import java.net.*;
 import java.awt.*;
+import ij.macro.Interpreter;
 
 import org.apache.commons.lang3.RandomStringUtils;
 

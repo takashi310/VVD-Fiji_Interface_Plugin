@@ -13,6 +13,7 @@
 #include "FijiInterfacePlugin.h"
 #include "FijiInterfacePluginWindow.h"
 #include "VRenderFrame.h"
+#include <wx/tokenzr.h>
 
 /*
  * SampleGuiPluginWindow1 type definition
@@ -86,11 +87,12 @@ bool SampleGuiPluginWindow1::Create(wxGuiPluginBase * plugin,
 
 SampleGuiPluginWindow1::~SampleGuiPluginWindow1()
 {
-	wxString fpath = m_FijiPickCtrl->GetPath();
 	SampleGuiPlugin1* plugin = (SampleGuiPlugin1 *)GetPlugin();
 	if (plugin)
 	{
-		plugin->SetFijiPath(fpath);
+		if (m_FijiPickCtrl) plugin->SetFijiPath(m_FijiPickCtrl->GetPath());
+		if (m_LaunchChk)    plugin->SetLaunchFijiAtStartup(m_LaunchChk->GetValue());
+		if (m_SendMaskChk)  plugin->SetSendMask(m_SendMaskChk->GetValue());
 		plugin->SaveConfigFile();
 	}
 }
@@ -107,6 +109,7 @@ void SampleGuiPluginWindow1::Init()
 	m_CommandTextCtrl = NULL;
 	m_CommandButton = NULL;
 	m_SendMaskChk = NULL;
+	m_LaunchChk = NULL;
 	m_prg_diag = NULL;
 	m_pctimer = new wxTimer(this, ID_PendingCommandTimer);
 	m_waitingforfiji = false;
@@ -121,16 +124,22 @@ void SampleGuiPluginWindow1::Init()
 void SampleGuiPluginWindow1::CreateControls()
 {    
 	wxString fpath;
+	bool sendmask = false;
+	bool launch_fiji = false;
 	SampleGuiPlugin1* plugin = (SampleGuiPlugin1 *)GetPlugin();
 	if (plugin)
+	{
 		fpath = plugin->GetFijiPath();
+		sendmask = plugin->GetSendMask();
+		launch_fiji = plugin->GetLaunchFijiAtStartup();
+	}
 
 ////@begin SampleGuiPluginWindow1 content construction
     SampleGuiPluginWindow1* itemGuiPluginWindowBase1 = this;
 
     wxBoxSizer* itemBoxSizer2 = new wxBoxSizer(wxVERTICAL);
     
-    wxStaticText* itemStaticText3 = new wxStaticText( itemGuiPluginWindowBase1, wxID_STATIC, _("Enter some text here:"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxStaticText* itemStaticText3 = new wxStaticText( itemGuiPluginWindowBase1, wxID_STATIC, _("Info:"), wxDefaultPosition, wxDefaultSize, 0 );
     itemBoxSizer2->Add(itemStaticText3, 0, wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP, 5);
 
 	wxString str = "Connectiong to Fiji...";
@@ -140,13 +149,20 @@ void SampleGuiPluginWindow1::CreateControls()
 
 	m_FijiPickCtrl = new wxFilePickerCtrl( itemGuiPluginWindowBase1, ID_SAMPLE_FIJI, fpath, _("path"), wxFileSelectorDefaultWildcardStr, wxDefaultPosition, wxSize(500, -1));
     itemBoxSizer2->Add(m_FijiPickCtrl, 0, wxGROW|wxLEFT|wxRIGHT|wxTOP, 5);
+	
+	m_LaunchChk = new wxCheckBox(itemGuiPluginWindowBase1, ID_SAMPLE_STARTUP, "Launch Fiji at startup ");
+	m_LaunchChk->SetValue(launch_fiji);
+	itemBoxSizer2->Add(5, 5);
+	itemBoxSizer2->Add(m_LaunchChk, 0, wxLEFT, 10);
+	itemBoxSizer2->Add(5, 15);
 
 	m_CommandTextCtrl = new wxTextCtrl( itemGuiPluginWindowBase1, ID_SAMPLE_COMMAND, _("Open..."), wxDefaultPosition, wxSize(500, -1), 0 );
     itemBoxSizer2->Add(m_CommandTextCtrl, 0, wxGROW|wxLEFT|wxRIGHT|wxTOP, 5);
 
 	m_SendMaskChk = new wxCheckBox(itemGuiPluginWindowBase1, ID_SAMPLE_MASK, "Process mask ");
-	itemBoxSizer2->Add(10, 5);
-	itemBoxSizer2->Add(m_SendMaskChk, 0, wxLEFT, 15);
+	m_SendMaskChk->SetValue(sendmask);
+	itemBoxSizer2->Add(5, 5);
+	itemBoxSizer2->Add(m_SendMaskChk, 0, wxLEFT, 10);
 
     m_CommandButton = new wxButton( itemGuiPluginWindowBase1, ID_SEND_EVENT_BUTTON, _("Send event"), wxDefaultPosition, wxDefaultSize, 0 );
     itemBoxSizer2->Add(m_CommandButton, 0, wxALIGN_CENTER_HORIZONTAL|wxALL, 5);
@@ -166,6 +182,7 @@ void SampleGuiPluginWindow1::EnableControls(bool enable)
 		if (m_CommandTextCtrl) m_CommandTextCtrl->Enable();
 		if (m_CommandButton) m_CommandButton->Enable();
 		if (m_SendMaskChk) m_SendMaskChk->Enable();
+		if (m_LaunchChk) m_LaunchChk->Enable();
 	}
 	else 
 	{
@@ -173,6 +190,7 @@ void SampleGuiPluginWindow1::EnableControls(bool enable)
 		if (m_CommandTextCtrl) m_CommandTextCtrl->Disable();
 		if (m_CommandButton) m_CommandButton->Disable();
 		if (m_SendMaskChk) m_SendMaskChk->Disable();
+		if (m_LaunchChk) m_LaunchChk->Disable();
 	}
 }
 
@@ -248,11 +266,28 @@ void SampleGuiPluginWindow1::doAction(ActionInfo *info)
 		if (m_VerTextCtrl)
 			m_VerTextCtrl->SetValue(wxString::Format("VVD plugin ver. %s   Fiji plugin ver. %s", FI_PLUGIN_VERSION, wxString((char *)info->data)));
 		break;
+	case FI_RUN:
+		if (info->data)
+		{
+			wxString options = wxString((char *)info->data);
+			wxStringTokenizer tkz(options, wxT(","));
+			wxCommandEvent e;
+
+			wxArrayString args;
+			while(tkz.HasMoreTokens())
+				args.Add(tkz.GetNextToken());
+
+			if (args.Count() == 1)
+				SendCommand(args[0], m_SendMaskChk->GetValue());
+			else if (args.Count() >= 2)
+				SendCommand(args[0], args[1]==_("true") ? true : false);
+			
+		}
+		break;
 	}
 }
 
-
-void SampleGuiPluginWindow1::OnSENDEVENTBUTTONClick( wxCommandEvent& event )
+void SampleGuiPluginWindow1::SendCommand(wxString com, bool send_mask)
 {
 	wxString fpath = m_FijiPickCtrl->GetPath();
 	SampleGuiPlugin1* plugin = (SampleGuiPlugin1 *)GetPlugin();
@@ -261,18 +296,21 @@ void SampleGuiPluginWindow1::OnSENDEVENTBUTTONClick( wxCommandEvent& event )
 		plugin->SetFijiPath(fpath);
 		if (!plugin->isReady())
 		{
-			plugin->StartFiji();
-
-			m_pctimer->Start(50);
-			m_pcwatch.Start();
-			if (m_prg_diag) wxDELETE(m_prg_diag);
-			m_prg_diag = new wxProgressDialog(
-				"Connecting to Fiji...",
-				"Please wait.",
-				100, 0, wxPD_APP_MODAL|wxPD_SMOOTH|wxPD_AUTO_HIDE|wxPD_CAN_ABORT);
-			m_prg_diag->Pulse();
-			if (m_Plugin->GetVVDMainFrame())
-				m_Plugin->GetVVDMainFrame()->SetEvtHandlerEnabled(false);
+			if (plugin->StartFiji())
+			{
+				pendingcommand = com;
+				pendingcom_msk = send_mask;
+				m_pctimer->Start(50);
+				m_pcwatch.Start();
+				if (m_prg_diag) wxDELETE(m_prg_diag);
+				m_prg_diag = new wxProgressDialog(
+					"Connecting to Fiji...",
+					"Please wait.",
+					100, 0, wxPD_APP_MODAL|wxPD_SMOOTH|wxPD_AUTO_HIDE|wxPD_CAN_ABORT);
+				m_prg_diag->Pulse();
+				if (m_Plugin->GetVVDMainFrame())
+					m_Plugin->GetVVDMainFrame()->SetEvtHandlerEnabled(false);
+			}
 		}
 		else
 		{
@@ -290,7 +328,7 @@ void SampleGuiPluginWindow1::OnSENDEVENTBUTTONClick( wxCommandEvent& event )
 			wxString act = "osascript -e 'tell application \"System Events\" to set frontmost of the first process whose unix id is "+plugin->GetPID()+" to true'";
             wxExecute(act, wxEXEC_HIDE_CONSOLE|wxEXEC_ASYNC);
 #endif
-			plugin->SendCommand(m_CommandTextCtrl->GetValue(), m_SendMaskChk->GetValue());
+			plugin->SendCommand(com, send_mask);
 			m_waitingforfiji = true;
 			EnableControls(false);
 			if (m_prg_diag) wxDELETE(m_prg_diag);
@@ -300,8 +338,16 @@ void SampleGuiPluginWindow1::OnSENDEVENTBUTTONClick( wxCommandEvent& event )
 				100, m_Plugin->GetVVDMainFrame(), wxPD_APP_MODAL|wxPD_SMOOTH|wxPD_AUTO_HIDE|wxPD_CAN_ABORT);
 			m_prg_diag->Pulse();
 			m_wtimer->Start(50);
+			
+			pendingcommand = "";
+			pendingcom_msk = m_SendMaskChk->GetValue();
 		}
 	}
+}
+
+void SampleGuiPluginWindow1::OnSENDEVENTBUTTONClick( wxCommandEvent& event )
+{
+	SendCommand(m_CommandTextCtrl->GetValue(), m_SendMaskChk->GetValue());
 
 	wxCommandEvent e(wxEVT_GUI_PLUGIN_INTEROP);
 	e.SetString(m_VerTextCtrl->GetValue());
@@ -336,10 +382,7 @@ void SampleGuiPluginWindow1::OnPendingCommandTimer(wxTimerEvent& event)
 		}
 
 		if (plugin && plugin->isReady())
-		{
-			wxCommandEvent e(wxEVT_NULL);
-			OnSENDEVENTBUTTONClick(e);
-		}
+			SendCommand(pendingcommand, pendingcom_msk);
 	}
 }
 
