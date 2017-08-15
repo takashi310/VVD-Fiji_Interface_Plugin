@@ -375,7 +375,7 @@ void SampleGuiPluginWindow1::OnPendingCommandTimer(wxTimerEvent& event)
 		m_pcwatch.Pause();
 		if (m_prg_diag) wxDELETE(m_prg_diag);
 		if (m_Plugin->GetVVDMainFrame()) m_Plugin->GetVVDMainFrame()->SetEvtHandlerEnabled(true);
-		if (m_pcwatch.Time() >= 10000)
+		if (m_pcwatch.Time() >= 15000)
 		{
 			plugin->CloseFiji();
 			wxMessageBox("Time out");
