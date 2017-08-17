@@ -280,7 +280,15 @@ void SampleGuiPluginWindow1::doAction(ActionInfo *info)
 			if (args.Count() == 1)
 				SendCommand(args[0], m_SendMaskChk->GetValue());
 			else if (args.Count() >= 2)
+            {
+                SampleGuiPlugin1* plugin = (SampleGuiPlugin1 *)GetPlugin();
+                if (plugin && args.Count() >= 3)
+                {
+                    if (args[2]==_("true"))  plugin->SetTempOverrideVox(TMP_OVOX_TRUE);
+                    if (args[2]==_("false")) plugin->SetTempOverrideVox(TMP_OVOX_FALSE);
+                }
 				SendCommand(args[0], args[1]==_("true") ? true : false);
+            }
 			
 		}
 		break;

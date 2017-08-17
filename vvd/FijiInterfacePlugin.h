@@ -12,6 +12,9 @@
 #define FI_CONFIRM 5
 #define FI_PID 6
 #define FI_RUN 7
+#define TMP_OVOX_NONE 0
+#define TMP_OVOX_TRUE 1
+#define TMP_OVOX_FALSE 2
 
 class FijiServerConnection : public wxConnection, public Notifier
 {
@@ -79,6 +82,8 @@ public:
 	bool GetSendMask() { return m_sendmask; }
 	void SetLaunchFijiAtStartup(bool val) { m_launch_fiji_startup = val; }
 	bool GetLaunchFijiAtStartup() { return m_launch_fiji_startup; }
+    void SetTempOverrideVox(int flag) { m_tmp_ovvox = flag; }
+    bool GetTempOverrideVox() { return m_tmp_ovvox; }
 
 	wxString GetPID() { return m_pid; }
 
@@ -102,6 +107,8 @@ private:
 	bool m_booting;
 	bool m_sendmask;
 	bool m_launch_fiji_startup;
+    int m_tmp_ovvox;
+    bool m_ovvox;
 	wxTimer m_timer;
 	wxStopWatch m_watch;
 	wxString m_pid;

@@ -142,13 +142,13 @@ bool FijiServerConnection::OnExec(const wxString &topic, const wxString &data)
 
 
 SampleGuiPlugin1::SampleGuiPlugin1()
-	: wxGuiPluginBase(NULL, NULL), m_server(NULL), m_initialized(false), m_booting(false), m_fijiprocess(NULL), m_sendmask(false), m_launch_fiji_startup(false)
+	: wxGuiPluginBase(NULL, NULL), m_server(NULL), m_initialized(false), m_booting(false), m_fijiprocess(NULL), m_sendmask(false), m_launch_fiji_startup(false), m_tmp_ovvox(TMP_OVOX_NONE)
 {
 
 }
 
 SampleGuiPlugin1::SampleGuiPlugin1(wxEvtHandler * handler, wxWindow * vvd)
-	: wxGuiPluginBase(handler, vvd), m_server(NULL), m_initialized(false), m_booting(false), m_fijiprocess(NULL), m_sendmask(false), m_launch_fiji_startup(false)
+	: wxGuiPluginBase(handler, vvd), m_server(NULL), m_initialized(false), m_booting(false), m_fijiprocess(NULL), m_sendmask(false), m_launch_fiji_startup(false), m_tmp_ovvox(TMP_OVOX_NONE)
 {
 }
 
@@ -250,6 +250,7 @@ void SampleGuiPlugin1::doAction(ActionInfo *info)
 			{
 				bool set_as_mask = false;
 				DataManager *dm = vframe->GetDataManager();
+                    
 				if (dm && !m_sent_mask.IsEmpty() && m_sent_mask == name && bd == 8)
 				{
 					VolumeData *src = dm->GetVolumeData(name);
@@ -307,6 +308,13 @@ void SampleGuiPlugin1::doAction(ActionInfo *info)
 		}
 		break;
 	case FI_COMMAND_FINISHED:
+        {
+            VRenderFrame *vframe = (VRenderFrame *)m_vvd;
+            DataManager *dm = vframe ? vframe->GetDataManager() : NULL;
+            if (dm)
+                dm->SetOverrideVox(m_ovvox);
+            m_tmp_ovvox = TMP_OVOX_NONE;
+        }
 		notifyAll(FI_COMMAND_FINISHED);
 		break;
 	}
@@ -317,6 +325,18 @@ bool SampleGuiPlugin1::SendCommand(wxString command, bool send_mask)
 	if (!m_server || !m_server->GetConnection())
 		return false;
     SendCurrentVolume(send_mask);
+    
+    VRenderFrame *vframe = (VRenderFrame *)m_vvd;
+    DataManager *dm = vframe ? vframe->GetDataManager() : NULL;
+    if (dm)
+    {
+        m_ovvox = dm->GetOverrideVox();
+        if (m_tmp_ovvox == TMP_OVOX_TRUE)
+            dm->SetOverrideVox(true);
+        else if (m_tmp_ovvox == TMP_OVOX_FALSE)
+            dm->SetOverrideVox(false);
+    }
+    
 	return m_server->GetConnection()->Poke(_("com"), command);
 }
 
@@ -384,6 +404,7 @@ bool SampleGuiPlugin1::SendCurrentVolume(bool send_mask)
     {
         m_server->GetConnection()->SetSndBufSize(basesize+imagesize);
         m_server->GetConnection()->Poke("setrcvbufsize", &tmp32, sizeof(int32_t), wxIPC_PRIVATE);
+        wxMilliSleep(100);
         m_server->GetConnection()->Poke("volume", buf, tmp32, wxIPC_PRIVATE);
 
 		if (send_mask) m_sent_mask = name;
@@ -414,7 +435,12 @@ bool SampleGuiPlugin1::StartFiji()
 	if (m_initialized || m_booting)
 		return true;
 
-	if (m_fiji_path.IsEmpty() || !wxFileExists(m_fiji_path))
+    wxString fjpath = m_fiji_path;
+#ifdef _DARWIN
+    fjpath += _("/Contents/MacOS/ImageJ-macosx");
+#endif
+
+	if (fjpath.IsEmpty() || !wxFileExists(fjpath))
 	{
 		wxMessageBox("Error: Could not found Fiji", "Fiji Interface");
 		return false;
@@ -422,11 +448,11 @@ bool SampleGuiPlugin1::StartFiji()
 
 	m_initialized = false;
 #ifdef _WIN32
-	wxString command = m_fiji_path + " -macro vvd_listener.txt";
+	wxString command = fjpath + " -macro vvd_listener.txt";
 #else
     wxString hcom = "defaults write " + m_fiji_path + "/Contents/Info LSUIElement 1";
     wxExecute(hcom, wxEXEC_HIDE_CONSOLE|wxEXEC_ASYNC);
-    wxString command = m_fiji_path + "/Contents/MacOS/ImageJ-macosx -macro vvd_listener.txt";
+    wxString command = fjpath + " -macro vvd_listener.txt";
 #endif
 	m_booting = true;
 	m_fijiprocess = new wxProcess();
