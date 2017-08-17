@@ -83,7 +83,7 @@ public:
 	void SetLaunchFijiAtStartup(bool val) { m_launch_fiji_startup = val; }
 	bool GetLaunchFijiAtStartup() { return m_launch_fiji_startup; }
     void SetTempOverrideVox(int flag) { m_tmp_ovvox = flag; }
-    bool GetTempOverrideVox() { return m_tmp_ovvox; }
+    int GetTempOverrideVox() { return m_tmp_ovvox; }
 
 	wxString GetPID() { return m_pid; }
 
