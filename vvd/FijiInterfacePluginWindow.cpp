@@ -334,7 +334,7 @@ void SampleGuiPluginWindow1::SendCommand(wxString com, bool send_mask)
 			}
 #else
 			wxString act = "osascript -e 'tell application \"System Events\" to set frontmost of the first process whose unix id is "+plugin->GetPID()+" to true'";
-            wxExecute(act, wxEXEC_HIDE_CONSOLE|wxEXEC_ASYNC);
+            wxExecute(act, wxEXEC_HIDE_CONSOLE|wxEXEC_SYNC);
 #endif
 			plugin->SendCommand(com, send_mask);
 			m_waitingforfiji = true;
