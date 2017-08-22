@@ -239,7 +239,12 @@ void SampleGuiPluginWindow1::doAction(ActionInfo *info)
 		this->SetEvtHandlerEnabled(true);
 		break;
 	case FI_COMMAND_FINISHED:
-		m_VerTextCtrl->SetValue("finished");
+		{
+			m_VerTextCtrl->SetValue("finished");
+			wxCommandEvent e(wxEVT_GUI_PLUGIN_INTEROP);
+			e.SetString(_("Fiji Interface,finished,")+wxString((const char*)info->data));
+			GetPlugin()->GetEventHandler()->AddPendingEvent(e);
+		}
 		if (m_prg_diag && m_waitingforfiji)
 		{
 			wxDELETE(m_prg_diag);
@@ -254,11 +259,11 @@ void SampleGuiPluginWindow1::doAction(ActionInfo *info)
             if (wxFileExists(act))
             {
                 act = _("cscript //nologo ")+act+" "+wxString::Format("%lu",wxGetProcessId());
-                wxExecute(act, wxEXEC_HIDE_CONSOLE|wxEXEC_ASYNC);
+                wxExecute(act, wxEXEC_HIDE_CONSOLE|wxEXEC_SYNC);
             }
 #else
             wxString act = "osascript -e 'tell application \"System Events\" to set frontmost of the first process whose unix id is "+wxString::Format("%lu",wxGetProcessId())+" to true'";
-            wxExecute(act, wxEXEC_HIDE_CONSOLE|wxEXEC_ASYNC);
+            wxExecute(act, wxEXEC_HIDE_CONSOLE|wxEXEC_SYNC);
 #endif
 		}
 		break;

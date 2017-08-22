@@ -116,13 +116,19 @@ bool FijiServerConnection::OnPoke(const wxString& topic, const wxString& item, c
         {
             int newbuffersize = *((const int32_t *)data);
             if (newbuffersize > 0)
+			{
                 m_sock->SetOption(SOL_SOCKET, SO_RCVBUF, &newbuffersize, sizeof(newbuffersize));
+				wxMilliSleep(300);
+			}
         }
         if (item == "setsndbufsize")
         {
             int newbuffersize = *((const int32_t *)data);
             if (newbuffersize > 0)
+			{
                 m_sock->SetOption(SOL_SOCKET, SO_SNDBUF, &newbuffersize, sizeof(newbuffersize));
+				wxMilliSleep(300);
+			}
         }
 		if (item == "volume")
 		{
@@ -315,7 +321,7 @@ void SampleGuiPlugin1::doAction(ActionInfo *info)
                 dm->SetOverrideVox(m_ovvox);
             m_tmp_ovvox = TMP_OVOX_NONE;
         }
-		notifyAll(FI_COMMAND_FINISHED);
+		notifyAll(FI_COMMAND_FINISHED, info->data, info->size);
 		break;
 	}
 }
@@ -451,7 +457,7 @@ bool SampleGuiPlugin1::StartFiji()
 	wxString command = fjpath + " -macro vvd_listener.txt";
 #else
     wxString hcom = "defaults write " + m_fiji_path + "/Contents/Info LSUIElement 1";
-    wxExecute(hcom, wxEXEC_HIDE_CONSOLE|wxEXEC_ASYNC);
+    wxExecute(hcom, wxEXEC_HIDE_CONSOLE|wxEXEC_SYNC);
     wxString command = fjpath + " -macro vvd_listener.txt";
 #endif
 	m_booting = true;
