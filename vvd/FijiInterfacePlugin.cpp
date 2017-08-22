@@ -410,7 +410,7 @@ bool SampleGuiPlugin1::SendCurrentVolume(bool send_mask)
     {
         m_server->GetConnection()->SetSndBufSize(basesize+imagesize);
         m_server->GetConnection()->Poke("setrcvbufsize", &tmp32, sizeof(int32_t), wxIPC_PRIVATE);
-        wxMilliSleep(100);
+        wxMilliSleep(500);
         m_server->GetConnection()->Poke("volume", buf, tmp32, wxIPC_PRIVATE);
 
 		if (send_mask) m_sent_mask = name;
