@@ -449,6 +449,14 @@ bool SampleGuiPlugin1::StartFiji()
 	if (fjpath.IsEmpty() || !wxFileExists(fjpath))
 	{
 		wxMessageBox("Error: Could not found Fiji", "Fiji Interface");
+		VRenderFrame *vframe = (VRenderFrame *)m_vvd;
+		
+		if (vframe)
+		{
+			if (!vframe->IsCreatedPluginWindow(GetName()))
+				vframe->CreatePluginWindow(GetName());
+			vframe->ToggleVisibilityPluginWindow(GetName(), true);
+		}
 		return false;
 	}
 
