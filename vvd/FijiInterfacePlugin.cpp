@@ -460,6 +460,29 @@ bool SampleGuiPlugin1::StartFiji()
 		return false;
 	}
 
+	wxString expath = wxStandardPaths::Get().GetExecutablePath();
+	expath = expath.BeforeLast(wxFILE_SEP_PATH, NULL);
+#ifdef _WIN32
+    wxString rootdir = m_fiji_path.BeforeLast(wxFILE_SEP_PATH, NULL);
+	wxString rdir = expath + wxFILE_SEP_PATH;
+#else
+	wxString rootdir = m_fiji_path;
+	wxString rdir = expath + _("/../Resources") + wxFILE_SEP_PATH;
+#endif
+	wxString macrodir = rootdir + wxFILE_SEP_PATH + _("macros") + wxFILE_SEP_PATH;
+	wxString plugindir = rootdir + wxFILE_SEP_PATH + _("plugins") + wxFILE_SEP_PATH;
+
+	if (wxDirExists(macrodir) && wxFileExists(rdir+"vvd_listener.txt"))
+		wxCopyFile(rdir+"vvd_listener.txt", macrodir+"vvd_listener.txt");
+	if (wxDirExists(macrodir) && wxFileExists(rdir+"vvd_run.txt"))
+		wxCopyFile(rdir+"vvd_run.txt", macrodir+"vvd_run.txt");
+	if (wxDirExists(macrodir) && wxFileExists(rdir+"vvd_quit.txt"))
+		wxCopyFile(rdir+"vvd_quit.txt", macrodir+"vvd_quit.txt");
+	if (wxDirExists(plugindir) && wxFileExists(rdir+"vvd_listener.jar"))
+		wxCopyFile(rdir+"vvd_listener.jar", plugindir+"vvd_listener.jar");
+	if (wxDirExists(plugindir) && wxFileExists(rdir+"NBLAST_Skeletonize.jar"))
+		wxCopyFile(rdir+"NBLAST_Skeletonize.jar", plugindir+"NBLAST_Skeletonize.jar");
+
 	m_initialized = false;
 #ifdef _WIN32
 	wxString command = fjpath + " -macro vvd_listener.txt";
@@ -486,16 +509,40 @@ void SampleGuiPlugin1::CloseFiji()
 #ifdef _WIN32
 	//wxString command = m_fiji_path + " -port3 -macro vvd_quit.ijm";
     //wxExecute(command);
-    if (!m_pid.IsEmpty()) wxExecute("taskkill /pid "+m_pid+" /f", wxEXEC_HIDE_CONSOLE|wxEXEC_ASYNC);
+    if (!m_pid.IsEmpty()) wxExecute("taskkill /pid "+m_pid+" /f", wxEXEC_HIDE_CONSOLE|wxEXEC_SYNC);
 #else
     if (!m_pid.IsEmpty())
     {
         wxString hcom = "defaults write " + m_fiji_path + "/Contents/Info LSUIElement 0";
         if (!m_fiji_path.IsEmpty())
-            wxExecute(hcom, wxEXEC_HIDE_CONSOLE|wxEXEC_ASYNC);
-        wxExecute("kill "+m_pid, wxEXEC_HIDE_CONSOLE|wxEXEC_ASYNC);
+            wxExecute(hcom, wxEXEC_HIDE_CONSOLE|wxEXEC_SYNC);
+        wxExecute("kill "+m_pid, wxEXEC_HIDE_CONSOLE|wxEXEC_SYNC);
     }
 #endif
+
+	wxString expath = wxStandardPaths::Get().GetExecutablePath();
+	expath = expath.BeforeLast(wxFILE_SEP_PATH, NULL);
+#ifdef _WIN32
+    wxString rootdir = m_fiji_path.BeforeLast(wxFILE_SEP_PATH, NULL);
+	wxString rdir = expath + wxFILE_SEP_PATH;
+#else
+	wxString rootdir = m_fiji_path;
+	wxString rdir = expath + _("/../Resources") + wxFILE_SEP_PATH;
+#endif
+	wxString macrodir = rootdir + wxFILE_SEP_PATH + _("macros") + wxFILE_SEP_PATH;
+	wxString plugindir = rootdir + wxFILE_SEP_PATH + _("plugins") + wxFILE_SEP_PATH;
+
+	if (wxFileExists(macrodir+"vvd_listener.txt"))
+		wxRemoveFile(macrodir+"vvd_listener.txt");
+	if (wxFileExists(macrodir+"vvd_run.txt"))
+		wxRemoveFile(macrodir+"vvd_run.txt");
+	if (wxFileExists(macrodir+"vvd_quit.txt"))
+		wxRemoveFile(macrodir+"vvd_quit.txt");
+//	if (wxFileExists(plugindir+"vvd_listener.jar"))
+//		wxRemoveFile(plugindir+"vvd_listener.jar");
+//	if (wxFileExists(plugindir+"NBLAST_Skeletonize.jar"))
+//		wxRemoveFile(plugindir+"NBLAST_Skeletonize.jar");
+
 	m_initialized = false;
 	m_booting = false;
 }
