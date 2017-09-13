@@ -109,6 +109,8 @@ private:
 	bool m_launch_fiji_startup;
     int m_tmp_ovvox;
     bool m_ovvox;
+	bool m_gpsyncspc;
+	bool m_gpsync;
 	wxTimer m_timer;
 	wxStopWatch m_watch;
 	wxString m_pid;

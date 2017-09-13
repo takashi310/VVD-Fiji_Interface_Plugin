@@ -318,7 +318,21 @@ void SampleGuiPlugin1::doAction(ActionInfo *info)
             VRenderFrame *vframe = (VRenderFrame *)m_vvd;
             DataManager *dm = vframe ? vframe->GetDataManager() : NULL;
             if (dm)
-                dm->SetOverrideVox(m_ovvox);
+			{
+				dm->SetOverrideVox(m_ovvox);
+				DataGroup* group = 0;
+				for (int i = 0; i < vframe->GetView(0)->GetLayerNum(); i++)
+				{
+					TreeLayer* layer = vframe->GetView(0)->GetLayer(i);
+					if (layer && layer->IsA() == 5)
+						group = (DataGroup*) layer;
+				}
+				if (group)
+				{
+					group->SetVolumeSyncSpc(m_gpsyncspc);
+					group->SetVolumeSyncProp(m_gpsync);
+				}
+			}
             m_tmp_ovvox = TMP_OVOX_NONE;
         }
 		notifyAll(FI_COMMAND_FINISHED, info->data, info->size);
@@ -337,10 +351,30 @@ bool SampleGuiPlugin1::SendCommand(wxString command, bool send_mask)
     if (dm)
     {
         m_ovvox = dm->GetOverrideVox();
-        if (m_tmp_ovvox == TMP_OVOX_TRUE)
-            dm->SetOverrideVox(true);
-        else if (m_tmp_ovvox == TMP_OVOX_FALSE)
-            dm->SetOverrideVox(false);
+
+		DataGroup* group = 0;
+		for (int i = 0; i < vframe->GetView(0)->GetLayerNum(); i++)
+		{
+			TreeLayer* layer = vframe->GetView(0)->GetLayer(i);
+			if (layer && layer->IsA() == 5)
+				group = (DataGroup*) layer;
+		}
+		if (group)
+		{
+			m_gpsync = group->GetVolumeSyncProp();
+			m_gpsyncspc = group->GetVolumeSyncSpc();
+			if (m_tmp_ovvox == TMP_OVOX_TRUE)
+			{
+				dm->SetOverrideVox(true);
+				group->SetVolumeSyncSpc(true);
+			}
+			else if (m_tmp_ovvox == TMP_OVOX_FALSE)
+			{
+				dm->SetOverrideVox(false);
+				group->SetVolumeSyncSpc(false);
+				group->SetVolumeSyncProp(false);
+			}
+		}
     }
     
 	return m_server->GetConnection()->Poke(_("com"), command);
