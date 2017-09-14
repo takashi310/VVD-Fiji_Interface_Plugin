@@ -22,7 +22,7 @@ class SampleGuiPluginWindow1: public wxGuiPluginWindowBase, public Observer
 
 	enum
 	{
-		ID_SAMPLEGUIPLUGINWINDOW1 = wxID_HIGHEST+10001,
+		ID_SAMPLEGUIPLUGINWINDOW1 = wxID_HIGHEST+11001,
 		ID_SAMPLE_TEXTCTRL,
 		ID_SAMPLE_FIJI,
 		ID_SAMPLE_COMMAND,
