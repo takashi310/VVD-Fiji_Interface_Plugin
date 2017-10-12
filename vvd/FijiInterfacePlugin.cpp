@@ -320,13 +320,7 @@ void SampleGuiPlugin1::doAction(ActionInfo *info)
             if (dm)
 			{
 				dm->SetOverrideVox(m_ovvox);
-				DataGroup* group = 0;
-				for (int i = 0; i < vframe->GetView(0)->GetLayerNum(); i++)
-				{
-					TreeLayer* layer = vframe->GetView(0)->GetLayer(i);
-					if (layer && layer->IsA() == 5)
-						group = (DataGroup*) layer;
-				}
+				DataGroup* group = vframe->GetView(0)->GetCurrentVolGroup();
 				if (group)
 				{
 					group->SetVolumeSyncSpc(m_gpsyncspc);
@@ -352,13 +346,7 @@ bool SampleGuiPlugin1::SendCommand(wxString command, bool send_mask)
     {
         m_ovvox = dm->GetOverrideVox();
 
-		DataGroup* group = 0;
-		for (int i = 0; i < vframe->GetView(0)->GetLayerNum(); i++)
-		{
-			TreeLayer* layer = vframe->GetView(0)->GetLayer(i);
-			if (layer && layer->IsA() == 5)
-				group = (DataGroup*) layer;
-		}
+		DataGroup* group = vframe->GetView(0)->GetCurrentVolGroup();
 		if (group)
 		{
 			m_gpsync = group->GetVolumeSyncProp();
