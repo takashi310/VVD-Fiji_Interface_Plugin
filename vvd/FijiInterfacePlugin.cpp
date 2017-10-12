@@ -317,7 +317,7 @@ void SampleGuiPlugin1::doAction(ActionInfo *info)
         {
             VRenderFrame *vframe = (VRenderFrame *)m_vvd;
             DataManager *dm = vframe ? vframe->GetDataManager() : NULL;
-            if (dm)
+            if (dm && vframe->GetView(0))
 			{
 				dm->SetOverrideVox(m_ovvox);
 				DataGroup* group = vframe->GetView(0)->GetCurrentVolGroup();
@@ -342,7 +342,7 @@ bool SampleGuiPlugin1::SendCommand(wxString command, bool send_mask)
     
     VRenderFrame *vframe = (VRenderFrame *)m_vvd;
     DataManager *dm = vframe ? vframe->GetDataManager() : NULL;
-    if (dm)
+    if (dm && vframe->GetView(0))
     {
         m_ovvox = dm->GetOverrideVox();
 
